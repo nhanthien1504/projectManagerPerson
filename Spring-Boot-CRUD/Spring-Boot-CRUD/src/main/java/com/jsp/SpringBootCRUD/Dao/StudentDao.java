@@ -11,10 +11,13 @@ import com.jsp.SpringBootCRUD.Repository.StudentRepository;
 
 @Repository
 public class StudentDao {
-	
-	@Autowired
-	StudentRepository studentRepository;
-	
+
+	private final StudentRepository studentRepository;
+
+	@Autowired(required = false)
+	public StudentDao(StudentRepository studentRepository) {
+		this.studentRepository = studentRepository;
+	}
 	// save student
 	public Student saveStudent(Student staudent) {
 		return studentRepository.save(staudent);
@@ -23,7 +26,7 @@ public class StudentDao {
 	// get student by id
 	public Student getStudentById(int id) {
 		Optional<Student> optional = studentRepository.findById(id);
-		if(optional.isEmpty()) {
+		if(optional ==null) {
 			return null;
 		} else return optional.get();
 	}
@@ -38,7 +41,7 @@ public class StudentDao {
 		Student existingstudent = getStudentById(id);
 		if(existingstudent != null) {
 			existingstudent.setName(student.getName());
-			existingstudent.setEmail(student.getEmail());
+			existingstudent.setPhone(student.getPhone());
 			return studentRepository.save(existingstudent);
 		} else return null;
 	}

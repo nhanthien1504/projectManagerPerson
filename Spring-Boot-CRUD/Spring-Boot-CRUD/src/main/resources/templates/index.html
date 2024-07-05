@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>DANH SACH CO DONG</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <nav>
+        <a th:href="@{/students}">Manage Students</a> |
+        <a th:href="@{/students/schedule}">View Schedule</a>
+    </nav>
+    <h1>THANH VIEN</h1>
+    <a class="btn btn-primary mb-3" href="/student/new">Them nguoi</a>
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>TEN</th>
+            <th>SDT</th>
+            <th>THUC HIEN</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="student : ${students}">
+            <td th:text="${student.id}"></td>
+            <td th:text="${student.name}"></td>
+            <td th:text="${student.phone}"></td>
+            <td>
+                <a class="btn btn-warning btn-sm" th:href="@{/student/edit/{id}(id=${student.id})}">Edit</a>
+                <a class="btn btn-danger btn-sm" th:href="@{/student/delete/{id}(id=${student.id})}">Delete</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

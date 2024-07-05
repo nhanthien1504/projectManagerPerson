@@ -1,9 +1,7 @@
 package com.jsp.SpringBootCRUD.Dto;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
+import java.util.List;
 
 @Entity
 public class Student {
@@ -12,7 +10,12 @@ public class Student {
 	private int id;
 	private String name;
 	private String email;
-	
+	private String phone;
+
+	@OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
+	private List<StudentShift> shifts;
+
+
 	public int getId() {
 		return id;
 	}
@@ -30,5 +33,11 @@ public class Student {
 	}
 	public void setEmail(String email) {
 		this.email = email;
+	}
+	public String getPhone() {
+		return phone;
+	}
+	public void setPhone(String phone) {
+		this.phone = phone;
 	}
 }
