@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-java-app-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-java-app
+  template:
+    metadata:
+      labels:
+        app: my-java-app
+    spec:
+      containers:
+      - name: my-app-container
+        # DÙNG PLACEHOLDER NÀY:
+        image: IMAGE_PLACEHOLDER 
+        ports:
+        - containerPort: 8080
+        env:
+          # Lấy thông tin DB từ Secret
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: mssql-db-secret # Tên của secret
+                key: host
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: mssql-db-secret
+                key: username
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mssql-db-secret
+                key: password

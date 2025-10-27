@@ -1,0 +1,56 @@
+stages:
+  - build_and_push
+  - deploy
+
+services:
+  - docker:20.10.16-dind
+
+variables:
+  # Các biến này bạn phải set trong GitLab CI/CD Settings
+  # ECR_REPOSITORY_URL: (Lấy từ output của CloudFormation)
+  # EKS_CLUSTER_NAME: (Lấy từ output của CloudFormation)
+  # AWS_DEFAULT_REGION: (Ví dụ: ap-southeast-1)
+  IMAGE_TAG: $ECR_REPOSITORY_URL:$CI_COMMIT_SHORT_SHA
+
+# Giai đoạn 1: Build ảnh và đẩy lên ECR
+build_and_push:
+  stage: build_and_push
+  image: docker:20.10.16
+  before_script:
+    - apk add --no-cache aws-cli
+    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
+  script:
+    - echo "Building Docker image: $IMAGE_TAG"
+    - docker build -t $IMAGE_TAG .
+    - echo "Pushing image to ECR: $IMAGE_TAG"
+    - docker push $IMAGE_TAG
+
+# Giai đoạn 2: Deploy ứng dụng lên EKS
+deploy_to_eks:
+  stage: deploy
+  image:
+    name: bitnami/kubectl:1.24
+    entrypoint: [""]
+  before_script:
+    - apk add --no-cache aws-cli
+    - echo "Configuring kubeconfig for EKS cluster: $EKS_CLUSTER_NAME"
+    - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME
+  script:
+    - echo "Deploying image $IMAGE_TAG to EKS..."
+    
+    # 1. Thay thế image tag trong file deployment
+    - sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_TAG|g" k8s/deployment.yaml
+    
+    # 2. Áp dụng file Service (Load Balancer)
+    - echo "Applying Service..."
+    - kubectl apply -f k8s/service.yaml
+    
+    # 3. Áp dụng file Deployment (Ứng dụng)
+    - echo "Applying Deployment..."
+    - kubectl apply -f k8s/deployment.yaml
+    
+    # 4. Kiểm tra trạng thái deploy
+    - echo "Waiting for deployment rollout..."
+    - kubectl rollout status deployment/my-java-app-deployment --timeout=120s
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
