@@ -3,38 +3,40 @@ stages:
   - deploy
 
 image: docker:20.10.16
-
 services:
   - docker:20.10.16-dind
 
 variables:
   IMAGE_TAG: $ECR_REPOSITORY_URL:$CI_COMMIT_SHORT_SHA
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
 
 build_and_push:
   stage: build_and_push
-
   before_script:
     - apk add --no-cache aws-cli
     - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
-
   script:
     - echo "Building Docker image: $IMAGE_TAG"
-    - docker build -t $IMAGE_TAG .
+    - docker build -t "$IMAGE_TAG" .
     - echo "Pushing image to ECR: $IMAGE_TAG"
-    - docker push $IMAGE_TAG
+    - docker push "$IMAGE_TAG"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
 
 deploy_to_eks:
   stage: deploy
-
   image:
-    name: bitnami/kubectl:1.24
-    entrypoint: [""] 
-
+    name: amazon/aws-cli:latest
+    entrypoint: [""]
   before_script:
-    - apk add --no-cache aws-cli
+    - echo "Installing kubectl v1.24..."
+    - curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.11/2023-03-17/bin/linux/amd64/kubectl
+    - chmod +x ./kubectl
+    - mv ./kubectl /usr/local/bin/kubectl
+    - kubectl version --client
     - echo "Configuring kubeconfig for EKS cluster: $EKS_CLUSTER_NAME"
     - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME
-
   script:
     - echo "Deploying image $IMAGE_TAG to EKS..."
     - sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_TAG|g" k8s/deployment.yaml
@@ -43,6 +45,5 @@ deploy_to_eks:
     - kubectl apply -f k8s/deployment.yaml
     - echo "Waiting for deployment rollout..."
     - kubectl rollout status deployment/my-java-app-deployment --timeout=120s
-
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
